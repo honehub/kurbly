@@ -16,3 +16,23 @@ export async function getNextCollections(lat, lng) {
   if (error) throw error
   return data
 }
+
+export async function geocodeAddress(address) {
+  const url = new URL('/geocode/locations/onelineaddress', window.location.origin)
+  url.searchParams.set('address', address)
+  url.searchParams.set('benchmark', 'Public_AR_Current')
+  url.searchParams.set('format', 'json')
+
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Geocoding service unavailable')
+
+  const json = await res.json()
+  const match = json.result?.addressMatches?.[0]
+  if (!match) return null
+
+  return {
+    lat: match.coordinates.y,
+    lng: match.coordinates.x,
+    matched: match.matchedAddress,
+  }
+}

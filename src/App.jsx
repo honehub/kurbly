@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { geocodeAddress, getNextCollections } from './supabase'
 
 export default function App() {
-  const [address, setAddress] = useState('')
+  const [address, setAddress] = useState(() => localStorage.getItem('address') || '')
   const [collections, setCollections] = useState(null)
   const [status, setStatus] = useState(null)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (address) lookup()
+  }, [])
 
   async function lookup() {
     setBusy(true)
@@ -23,6 +27,7 @@ export default function App() {
         return
       }
       setCollections(data)
+      localStorage.setItem('address', address)
     } catch (e) {
       setStatus(e.message)
     } finally {

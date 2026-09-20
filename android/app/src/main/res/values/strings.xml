@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kurbly</string>
+    <string name="title_activity_main">Kurbly</string>
+    <string name="package_name">com.honeaenterprises.kurbly</string>
+    <string name="custom_url_scheme">com.honeaenterprises.kurbly</string>
+</resources>

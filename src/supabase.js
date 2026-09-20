@@ -36,3 +36,11 @@ export async function geocodeAddress(address) {
     matched: match.matchedAddress,
   }
 }
+
+export async function getOrganization() {
+  const { data, error } = await supabase.rpc('get_public_organization', {
+    input_organization_id: ORG_ID,
+  })
+  if (error) throw error
+  return data?.[0] ?? null
+}

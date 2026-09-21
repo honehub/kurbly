@@ -1,5 +1,10 @@
 {
   "appId": "com.honeaenterprises.kurbly",
   "appName": "Kurbly",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

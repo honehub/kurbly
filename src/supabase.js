@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Capacitor } from '@capacitor/core'
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
@@ -18,7 +19,11 @@ export async function getNextCollections(lat, lng) {
 }
 
 export async function geocodeAddress(address) {
-  const url = new URL('/geocode/locations/onelineaddress', window.location.origin)
+  const base = Capacitor.isNativePlatform()
+    ? 'https://geocoding.geo.census.gov/geocoder'
+    : window.location.origin + '/geocode'
+
+  const url = new URL(base + '/locations/onelineaddress')
   url.searchParams.set('address', address)
   url.searchParams.set('benchmark', 'Public_AR_Current')
   url.searchParams.set('format', 'json')

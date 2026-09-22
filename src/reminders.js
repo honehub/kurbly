@@ -17,7 +17,7 @@ export async function scheduleReminders(lat, lng, hour = 19) {
     input_organization_id: ORG_ID,
     input_lat: lat,
     input_lng: lng,
-    input_days_ahead: 45,
+    input_days_ahead: 120,
   })
   if (error) throw error
 

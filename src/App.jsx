@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { geocodeAddress, getNextCollections, getOrganization } from './supabase'
+import { scheduleReminders, testReminder } from './reminders'
 
 const ICONS = { trash: '🗑️', recycle: '♻️', truck: '🚚' }
 
@@ -9,6 +10,7 @@ export default function App() {
   const [status, setStatus] = useState(null)
   const [busy, setBusy] = useState(false)
   const [org, setOrg] = useState(null)
+  const [reminderStatus, setReminderStatus] = useState(null)
 
   const accent = org?.primary_color || '#1d4ed8'
 
@@ -34,11 +36,27 @@ export default function App() {
       }
       setCollections(data)
       localStorage.setItem('address', address)
+
+      const result = await scheduleReminders(place.lat, place.lng)
+      if (result === 'denied') {
+        setReminderStatus('Reminders are off. Turn on notifications for Kurbly in your phone settings.')
+      } else if (result === 'unsupported') {
+        setReminderStatus('Reminders work in the Kurbly phone app.')
+      } else {
+        setReminderStatus(`Reminders set for ${result} upcoming pickup days at 7 PM the night before.`)
+      }
     } catch (e) {
       setStatus(e.message)
     } finally {
       setBusy(false)
     }
+  }
+
+  async function runTest() {
+    const result = await testReminder()
+    if (result === 'scheduled') setReminderStatus('Test notification coming in about 1 minute.')
+    else if (result === 'denied') setReminderStatus('Notifications are blocked for Kurbly.')
+    else setReminderStatus('Test reminders only work in the phone app.')
   }
 
   const groups = groupByDate(collections)
@@ -51,7 +69,7 @@ export default function App() {
         <header style={S.header}>
           {org?.logo_url && <img src={org.logo_url} alt="" style={S.logo} />}
           <h1 style={{ ...S.title, color: accent }}>
-            {org?.organization_name || 'TrashDay'}
+            {org?.organization_name || 'Kurbly'}
           </h1>
           <p style={S.tagline}>Know what's going out.</p>
         </header>
@@ -129,6 +147,19 @@ export default function App() {
               </div>
             ))}
           </>
+        )}
+
+        {collections && (
+          <div style={S.card}>
+            <div style={S.rowName}>🔔 Reminders</div>
+            {reminderStatus && <div style={{ ...S.relative, marginTop: 6 }}>{reminderStatus}</div>}
+            <button
+              onClick={runTest}
+              style={{ ...S.button, background: 'transparent', color: accent, border: `1px solid ${accent}` }}
+            >
+              Send a test reminder
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -238,12 +269,11 @@ const S = {
     marginBottom: 8,
   },
   nextItem: { display: 'flex', alignItems: 'center', gap: 14, marginTop: 16 },
-  nextRow: { display: 'flex', alignItems: 'center', gap: 16 },
   iconWrap: {
     width: 60,
     height: 60,
     borderRadius: '50%',
-    display: 'grid',
+	    display: 'grid',
     placeItems: 'center',
     fontSize: 28,
     flexShrink: 0,
@@ -270,21 +300,4 @@ const S = {
   row: { display: 'flex', alignItems: 'center', gap: 14 },
   rowName: { fontSize: 16, fontWeight: 600, color: '#111827' },
   rowDate: { fontSize: 15, fontWeight: 600, color: '#111827' },
-  notice: {
-    marginTop: 14,
-    padding: 10,
-    background: '#fffbeb',
-    borderRadius: 8,
-    fontSize: 14,
-    color: '#92400e',
-  },
-  badge: {
-    marginLeft: 'auto',
-    fontSize: 11,
-    fontWeight: 700,
-    color: '#92400e',
-    background: '#fef3c7',
-    padding: '4px 8px',
-    borderRadius: 999,
-  },
 }

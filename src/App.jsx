@@ -13,12 +13,13 @@ export default function App() {
   const [org, setOrg] = useState(null)
   const [reminderStatus, setReminderStatus] = useState(null)
   const [showMap, setShowMap] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const [pinned, setPinned] = useState(() => {
     const saved = localStorage.getItem('pinned')
     return saved ? JSON.parse(saved) : null
   })
   const accent = org?.primary_color || '#1d4ed8'
-
+  
   useEffect(() => {
     getOrganization().then(setOrg).catch(() => {})
     if (pinned) {
@@ -106,7 +107,12 @@ export default function App() {
 
   const groups = groupByDate(collections)
   const first = groups[0]
-  const later = groups.slice(1)
+  const rest = groups.slice(1)
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() + 21)
+  const withinThreeWeeks = rest.filter((g) => parseDate(g.date) <= cutoff)
+  const later = showAll ? rest : withinThreeWeeks
+  const hiddenCount = rest.length - withinThreeWeeks.length
 
   return (
     <div style={S.page}>
@@ -201,6 +207,14 @@ export default function App() {
                 ))}
               </div>
             ))}
+            {!showAll && hiddenCount > 0 && (
+              <button
+                onClick={() => setShowAll(true)}
+                style={{ ...S.button, background: 'transparent', color: accent, border: `1px solid ${accent}` }}
+              >
+                See {hiddenCount} more pickup {hiddenCount === 1 ? 'day' : 'days'}
+              </button>
+            )}
           </>
         )}
 

@@ -3,6 +3,11 @@ import { PushNotifications } from '@capacitor/push-notifications'
 import { supabase, ORG_ID } from './supabase'
 
 let registered = false
+let deviceToken = null
+
+export function getDeviceToken() {
+  return deviceToken || localStorage.getItem('pushToken')
+}
 
 // Registers this device for push reminders. Safe to call on every app open.
 export async function registerForPush(lat, lng, reminderHour = 19) {
@@ -22,6 +27,8 @@ export async function registerForPush(lat, lng, reminderHour = 19) {
     }
 
     PushNotifications.addListener('registration', async (token) => {
+      deviceToken = token.value
+      localStorage.setItem('pushToken', token.value)
       try {
         const { error } = await supabase.rpc('register_push_device', {
           input_organization_id: ORG_ID,
@@ -46,4 +53,29 @@ export async function registerForPush(lat, lng, reminderHour = 19) {
     // Don't hang forever if neither listener fires
     setTimeout(() => done('timeout'), 15000)
   })
+}
+
+export async function loadPreferences() {
+  const token = getDeviceToken()
+  if (!token) return null
+  const { data, error } = await supabase.rpc('get_push_preferences', {
+    input_token: token,
+  })
+  if (error) return null
+  return data?.[0] ?? null
+}
+
+export async function savePreferences(prefs) {
+  const token = getDeviceToken()
+  if (!token) return false
+  const { error } = await supabase.rpc('update_push_preferences', {
+    input_token: token,
+    input_enabled: prefs.enabled,
+    input_timing: prefs.timing,
+    input_hour: prefs.hour,
+    input_minute: prefs.minute ?? 0,
+    input_categories: prefs.categories,
+    input_language: prefs.language,
+  })
+  return !error
 }

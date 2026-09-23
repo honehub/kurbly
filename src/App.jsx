@@ -4,6 +4,7 @@ import { registerForPush } from './push'
 import BottomNav from './BottomNav'
 import ScheduleView from './ScheduleView'
 import { S } from './styles'
+import SettingsView from './SettingsView'
 
 export default function App() {
   const [tab, setTab] = useState('home')
@@ -126,9 +127,7 @@ export default function App() {
           <div style={S.empty}>Report an issue — coming next.</div>
         )}
 
-        {tab === 'settings' && (
-          <div style={S.empty}>Settings — coming next.</div>
-        )}
+        {tab === 'settings' && <SettingsView accent={accent} />}
       </div>
 
       <BottomNav tab={tab} setTab={setTab} accent={accent} />

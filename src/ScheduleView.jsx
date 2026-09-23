@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import PinMap, { SAN_ANGELO } from './PinMap'
 import { S, ICONS, tint, parseDate, formatDate, relative } from './styles'
+import { useLang, CATEGORY_LABELS } from './i18n'
 
 export default function ScheduleView({
   address, setAddress, collections, status, busy, accent,
   showMap, setShowMap, onLookup, onUsePin, pinned, onCancelMap,
 }) {
   const [showAll, setShowAll] = useState(false)
+  const { t, lang, locale } = useLang()
+  const labels = CATEGORY_LABELS[lang]
+
+  const name = (c) => labels[c.service_category] || c.service_name
 
   const groups = groupByDate(collections)
   const first = groups[0]
@@ -20,12 +25,12 @@ export default function ScheduleView({
   return (
     <>
       <div style={S.card}>
-        <label style={S.label}>Your service address</label>
+        <label style={S.label}>{t.yourAddress}</label>
         <input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onLookup()}
-          placeholder="Street address, city, state ZIP"
+          placeholder={t.addressPlaceholder}
           style={S.input}
         />
         <button
@@ -37,7 +42,7 @@ export default function ScheduleView({
             opacity: busy || !address.trim() ? 0.5 : 1,
           }}
         >
-          {busy ? 'Looking up…' : 'Find my schedule'}
+          {busy ? t.lookingUp : t.findSchedule}
         </button>
       </div>
 
@@ -56,12 +61,12 @@ export default function ScheduleView({
       {first && (
         <div style={{ ...S.card, ...S.nextCard }}>
           <div style={S.eyebrow}>
-            {first.items.length > 1 ? 'Next pickups' : 'Next pickup'}
+            {first.items.length > 1 ? t.nextPickups : t.nextPickup}
           </div>
           <div style={{ ...S.nextDate, color: accent, fontSize: 18 }}>
-            {formatDate(first.date)}
+            {formatDate(first.date, locale)}
           </div>
-          <div style={S.relative}>{relative(first.date)}</div>
+          <div style={S.relative}>{relative(first.date, t)}</div>
 
           {first.items.map((c) => (
             <div key={c.service_category} style={S.nextItem}>
@@ -72,7 +77,7 @@ export default function ScheduleView({
                 })()}
               </div>
               <div>
-                <div style={S.nextName}>{c.service_name}</div>
+                <div style={S.nextName}>{name(c)}</div>
                 {c.schedule_changed && (
                   <div style={S.changedText}>⚠️ {c.change_reason}</div>
                 )}
@@ -84,11 +89,11 @@ export default function ScheduleView({
 
       {later.length > 0 && (
         <>
-          <h2 style={S.sectionTitle}>Coming up</h2>
+          <h2 style={S.sectionTitle}>{t.comingUp}</h2>
           {later.map((g) => (
             <div key={g.date} style={S.card}>
-              <div style={S.rowDate}>{formatDate(g.date)}</div>
-              <div style={S.relative}>{relative(g.date)}</div>
+              <div style={S.rowDate}>{formatDate(g.date, locale)}</div>
+              <div style={S.relative}>{relative(g.date, t)}</div>
               {g.items.map((c) => (
                 <div key={c.service_category} style={{ ...S.row, marginTop: 12 }}>
                   <div style={{ ...S.iconWrapSm, background: tint(accent) }}>
@@ -98,7 +103,7 @@ export default function ScheduleView({
                     })()}
                   </div>
                   <div>
-                    <div style={S.rowName}>{c.service_name}</div>
+                    <div style={S.rowName}>{name(c)}</div>
                     {c.schedule_changed && (
                       <div style={S.changedText}>{c.change_reason}</div>
                     )}
@@ -112,7 +117,7 @@ export default function ScheduleView({
               onClick={() => setShowAll(true)}
               style={{ ...S.button, background: 'transparent', color: accent, border: `1px solid ${accent}` }}
             >
-              See {hiddenCount} more pickup {hiddenCount === 1 ? 'day' : 'days'}
+              {t.seeMore(hiddenCount)}
             </button>
           )}
         </>

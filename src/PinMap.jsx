@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useLang } from './i18n'
 
-// Leaflet's default marker images don't survive bundling, so use a plain SVG pin
 const pinIcon = L.divIcon({
   className: '',
   html: `<svg width="32" height="42" viewBox="0 0 32 42" xmlns="http://www.w3.org/2000/svg">
@@ -25,12 +25,11 @@ function ClickHandler({ onMove }) {
 
 export default function PinMap({ center, onConfirm, onCancel, accent = '#1d4ed8', busy }) {
   const [pos, setPos] = useState(center)
+  const { t } = useLang()
 
   return (
     <div style={wrap}>
-      <div style={help}>
-        Tap the map to move the pin onto your house, then confirm.
-      </div>
+      <div style={help}>{t.mapHelp}</div>
 
       <div style={mapBox}>
         <MapContainer
@@ -59,11 +58,11 @@ export default function PinMap({ center, onConfirm, onCancel, accent = '#1d4ed8'
         disabled={busy}
         style={{ ...btn, background: accent, opacity: busy ? 0.5 : 1 }}
       >
-        {busy ? 'Checking…' : 'Use this location'}
+        {busy ? t.checking : t.useLocation}
       </button>
 
       <button onClick={onCancel} style={{ ...btn, ...cancelBtn }}>
-        Enter address again
+        {t.enterAgain}
       </button>
     </div>
   )

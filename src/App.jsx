@@ -3,10 +3,12 @@ import { geocodeAddress, getOrganization, reverseGeocode, getSchedule } from './
 import { registerForPush } from './push'
 import BottomNav from './BottomNav'
 import ScheduleView from './ScheduleView'
-import { S } from './styles'
 import SettingsView from './SettingsView'
+import { S } from './styles'
+import { useLang } from './i18n'
 
 export default function App() {
+  const { t } = useLang()
   const [tab, setTab] = useState('home')
   const [address, setAddress] = useState(() => localStorage.getItem('address') || '')
   const [collections, setCollections] = useState(null)
@@ -14,7 +16,6 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [org, setOrg] = useState(null)
   const [showMap, setShowMap] = useState(false)
-  const [coords, setCoords] = useState(null)
   const [pinned, setPinned] = useState(() => {
     const saved = localStorage.getItem('pinned')
     return saved ? JSON.parse(saved) : null
@@ -40,7 +41,7 @@ export default function App() {
     try {
       const place = await geocodeAddress(address)
       if (!place) {
-        setStatus("We couldn't find that address. You can place a pin on the map instead.")
+        setStatus(t.notFound)
         setShowMap(true)
         return
       }
@@ -66,7 +67,7 @@ export default function App() {
         localStorage.setItem('pinned', JSON.stringify({ lat: pos.lat, lng: pos.lng }))
         const label =
           (await reverseGeocode(pos.lat, pos.lng)) ||
-          `Pinned location (${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)})`
+          `${t.pinnedLocation} (${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)})`
         setAddress(label)
         localStorage.setItem('address', label)
       }
@@ -80,13 +81,12 @@ export default function App() {
   async function loadSchedule(lat, lng) {
     const data = await getSchedule(lat, lng, 60)
     if (!data || data.length === 0) {
-      setStatus('That location is outside our service area.')
+      setStatus(t.outsideArea)
       setCollections(null)
       return false
     }
     setCollections(data)
     setStatus(null)
-    setCoords({ lat, lng })
     registerForPush(lat, lng).catch(() => {})
     return true
   }
@@ -99,7 +99,7 @@ export default function App() {
           <h1 style={{ ...S.title, color: accent }}>
             {org?.organization_name || 'Kurbly'}
           </h1>
-          <p style={S.tagline}>Know what's going out.</p>
+          <p style={S.tagline}>{t.tagline}</p>
         </header>
 
         {tab === 'home' && (
@@ -119,14 +119,8 @@ export default function App() {
           />
         )}
 
-        {tab === 'alerts' && (
-          <div style={S.empty}>No service alerts right now.</div>
-        )}
-
-        {tab === 'report' && (
-          <div style={S.empty}>Report an issue — coming next.</div>
-        )}
-
+        {tab === 'alerts' && <div style={S.empty}>{t.noAlerts}</div>}
+        {tab === 'report' && <div style={S.empty}>{t.reportSoon}</div>}
         {tab === 'settings' && <SettingsView accent={accent} />}
       </div>
 

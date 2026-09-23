@@ -1,22 +1,25 @@
 import { Calendar, Megaphone, Camera, Settings } from 'lucide-react'
+import { useLang } from './i18n'
 
 export default function BottomNav({ tab, setTab, accent, alertCount = 0 }) {
+  const { t } = useLang()
+
   const tabs = [
-    { id: 'home', label: 'Schedule', Icon: Calendar },
-    { id: 'alerts', label: 'Alerts', Icon: Megaphone, badge: alertCount },
-    { id: 'report', label: 'Report', Icon: Camera },
-    { id: 'settings', label: 'Settings', Icon: Settings },
+    { id: 'home', label: t.navSchedule, Icon: Calendar },
+    { id: 'alerts', label: t.navAlerts, Icon: Megaphone, badge: alertCount },
+    { id: 'report', label: t.navReport, Icon: Camera },
+    { id: 'settings', label: t.navSettings, Icon: Settings },
   ]
 
   return (
     <nav style={bar}>
       <div style={inner}>
-        {tabs.map((t) => {
-          const active = tab === t.id
+        {tabs.map((tb) => {
+          const active = tab === tb.id
           return (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
+              key={tb.id}
+              onClick={() => setTab(tb.id)}
               style={{
                 ...item,
                 color: active ? accent : '#9ca3af',
@@ -24,10 +27,10 @@ export default function BottomNav({ tab, setTab, accent, alertCount = 0 }) {
               }}
             >
               <span style={iconWrap}>
-                <t.Icon size={21} strokeWidth={active ? 2.2 : 1.8} />
-                {t.badge > 0 && <span style={badge}>{t.badge}</span>}
+                <tb.Icon size={21} strokeWidth={active ? 2.2 : 1.8} />
+                {tb.badge > 0 && <span style={badge}>{tb.badge}</span>}
               </span>
-              <span style={{ fontSize: 11 }}>{t.label}</span>
+              <span style={{ fontSize: 11 }}>{tb.label}</span>
             </button>
           )
         })}

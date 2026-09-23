@@ -2,44 +2,37 @@ import { useState, useEffect } from 'react'
 import { Trash2, Recycle, Truck } from 'lucide-react'
 import { loadPreferences, savePreferences, getDeviceToken } from './push'
 import { S, tint } from './styles'
-
-const CATEGORIES = [
-  { id: 'trash', label: 'Trash', Icon: Trash2 },
-  { id: 'recycling', label: 'Recycling', Icon: Recycle },
-  { id: 'bulk', label: 'Bulk pickup', Icon: Truck },
-]
+import { useLang } from './i18n'
 
 const TIMES = {
   night_before: [
-    { h: 16, m: 0, label: '4:00 PM' },
-    { h: 16, m: 30, label: '4:30 PM' },
-    { h: 17, m: 0, label: '5:00 PM' },
-    { h: 17, m: 30, label: '5:30 PM' },
-    { h: 18, m: 0, label: '6:00 PM' },
-    { h: 18, m: 30, label: '6:30 PM' },
-    { h: 19, m: 0, label: '7:00 PM' },
-    { h: 19, m: 30, label: '7:30 PM' },
-    { h: 20, m: 0, label: '8:00 PM' },
-    { h: 20, m: 30, label: '8:30 PM' },
-    { h: 21, m: 0, label: '9:00 PM' },
-    { h: 21, m: 30, label: '9:30 PM' },
+    { h: 16, m: 0 }, { h: 16, m: 30 }, { h: 17, m: 0 }, { h: 17, m: 30 },
+    { h: 18, m: 0 }, { h: 18, m: 30 }, { h: 19, m: 0 }, { h: 19, m: 30 },
+    { h: 20, m: 0 }, { h: 20, m: 30 }, { h: 21, m: 0 }, { h: 21, m: 30 },
   ],
   day_of: [
-    { h: 4, m: 0, label: '4:00 AM' },
-    { h: 4, m: 30, label: '4:30 AM' },
-    { h: 5, m: 0, label: '5:00 AM' },
-    { h: 5, m: 30, label: '5:30 AM' },
-    { h: 6, m: 0, label: '6:00 AM' },
-    { h: 6, m: 30, label: '6:30 AM' },
-    { h: 7, m: 0, label: '7:00 AM' },
-    { h: 7, m: 30, label: '7:30 AM' },
+    { h: 4, m: 0 }, { h: 4, m: 30 }, { h: 5, m: 0 }, { h: 5, m: 30 },
+    { h: 6, m: 0 }, { h: 6, m: 30 }, { h: 7, m: 0 }, { h: 7, m: 30 },
   ],
 }
 
+function timeLabel(h, m, locale) {
+  const d = new Date()
+  d.setHours(h, m, 0, 0)
+  return d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' })
+}
+
 export default function SettingsView({ accent }) {
+  const { t, lang, locale, setLang } = useLang()
   const [prefs, setPrefs] = useState(null)
   const [saved, setSaved] = useState(false)
   const hasDevice = !!getDeviceToken()
+
+  const CATEGORIES = [
+    { id: 'trash', label: t.trash, Icon: Trash2 },
+    { id: 'recycling', label: t.recycling, Icon: Recycle },
+    { id: 'bulk', label: t.bulk, Icon: Truck },
+  ]
 
   useEffect(() => {
     loadPreferences().then((p) => {
@@ -50,7 +43,7 @@ export default function SettingsView({ accent }) {
           reminder_hour: 19,
           reminder_minute: 0,
           enabled_categories: ['trash', 'recycling', 'bulk'],
-          language: 'en',
+          language: lang,
         },
       )
     })
@@ -59,6 +52,7 @@ export default function SettingsView({ accent }) {
   async function update(changes) {
     const next = { ...prefs, ...changes }
     setPrefs(next)
+    if (changes.language) setLang(changes.language)
     const ok = await savePreferences({
       enabled: next.reminders_enabled,
       timing: next.reminder_timing,
@@ -80,23 +74,19 @@ export default function SettingsView({ accent }) {
     update({ enabled_categories: list })
   }
 
-  if (!prefs) return <div style={S.empty}>Loading…</div>
+  if (!prefs) return <div style={S.empty}>{t.loading}</div>
 
   const times = TIMES[prefs.reminder_timing]
 
   return (
     <>
-      {!hasDevice && (
-        <div style={S.status}>
-          Open Kurbly on your phone to turn on reminders.
-        </div>
-      )}
+      {!hasDevice && <div style={S.status}>{t.openOnPhone}</div>}
 
       <div style={S.card}>
         <div style={rowBetween}>
           <div>
-            <div style={S.rowName}>Pickup reminders</div>
-            <div style={S.muted}>Get notified before each collection</div>
+            <div style={S.rowName}>{t.pickupReminders}</div>
+            <div style={S.muted}>{t.reminderSubtitle}</div>
           </div>
           <Toggle
             on={prefs.reminders_enabled}
@@ -109,11 +99,11 @@ export default function SettingsView({ accent }) {
       {prefs.reminders_enabled && (
         <>
           <div style={S.card}>
-            <div style={S.label}>When</div>
+            <div style={S.label}>{t.when}</div>
             <div style={segment}>
               {[
-                { id: 'night_before', label: 'Night before' },
-                { id: 'day_of', label: 'Morning of' },
+                { id: 'night_before', label: t.nightBefore },
+                { id: 'day_of', label: t.morningOf },
               ].map((opt) => {
                 const active = prefs.reminder_timing === opt.id
                 return (
@@ -138,7 +128,7 @@ export default function SettingsView({ accent }) {
               })}
             </div>
 
-            <div style={{ ...S.label, marginTop: 16 }}>Time</div>
+            <div style={{ ...S.label, marginTop: 16 }}>{t.time}</div>
             <select
               value={`${prefs.reminder_hour}:${prefs.reminder_minute}`}
               onChange={(e) => {
@@ -147,14 +137,16 @@ export default function SettingsView({ accent }) {
               }}
               style={S.input}
             >
-              {times.map((t) => (
-                <option key={`${t.h}:${t.m}`} value={`${t.h}:${t.m}`}>{t.label}</option>
+              {times.map((tm) => (
+                <option key={`${tm.h}:${tm.m}`} value={`${tm.h}:${tm.m}`}>
+                  {timeLabel(tm.h, tm.m, locale)}
+                </option>
               ))}
             </select>
           </div>
 
           <div style={S.card}>
-            <div style={S.label}>Remind me about</div>
+            <div style={S.label}>{t.remindMeAbout}</div>
             {CATEGORIES.map(({ id, label, Icon }) => (
               <div key={id} style={{ ...rowBetween, marginTop: 14 }}>
                 <div style={S.row}>
@@ -175,13 +167,13 @@ export default function SettingsView({ accent }) {
       )}
 
       <div style={S.card}>
-        <div style={S.label}>Language</div>
+        <div style={S.label}>{t.language}</div>
         <div style={segment}>
           {[
             { id: 'en', label: 'English' },
             { id: 'es', label: 'Español' },
           ].map((opt) => {
-            const active = prefs.language === opt.id
+            const active = lang === opt.id
             return (
               <button
                 key={opt.id}
@@ -199,7 +191,7 @@ export default function SettingsView({ accent }) {
         </div>
       </div>
 
-      {saved && <div style={{ ...S.muted, textAlign: 'center' }}>Saved</div>}
+      {saved && <div style={{ ...S.muted, textAlign: 'center' }}>{t.saved}</div>}
     </>
   )
 }

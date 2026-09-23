@@ -111,7 +111,7 @@ export function parseDate(iso) {
   return new Date(y, m - 1, d)
 }
 
-export function formatDate(iso, locale) {
+export function formatDate(iso, locale = 'en-US') {
   return parseDate(iso).toLocaleDateString(locale, {
     weekday: 'long',
     month: 'long',
@@ -119,11 +119,11 @@ export function formatDate(iso, locale) {
   })
 }
 
-export function relative(iso) {
+export function relative(iso, t) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const days = Math.round((parseDate(iso) - today) / 86400000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Tomorrow'
-  return `In ${days} days`
+  if (days === 0) return t.today
+  if (days === 1) return t.tomorrow
+  return t.inDays(days)
 }

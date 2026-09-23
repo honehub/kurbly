@@ -4,6 +4,7 @@ import { registerForPush } from './push'
 import BottomNav from './BottomNav'
 import ScheduleView from './ScheduleView'
 import SettingsView from './SettingsView'
+import Logo from './Logo'
 import { S } from './styles'
 import { useLang } from './i18n'
 
@@ -16,6 +17,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [org, setOrg] = useState(null)
   const [showMap, setShowMap] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [pinned, setPinned] = useState(() => {
     const saved = localStorage.getItem('pinned')
     return saved ? JSON.parse(saved) : null
@@ -36,7 +38,6 @@ export default function App() {
   async function lookup() {
     setBusy(true)
     setStatus(null)
-    setCollections(null)
     setShowMap(false)
     try {
       const place = await geocodeAddress(address)
@@ -45,10 +46,13 @@ export default function App() {
         setShowMap(true)
         return
       }
-      await loadSchedule(place.lat, place.lng)
-      localStorage.setItem('address', address)
-      localStorage.removeItem('pinned')
-      setPinned(null)
+      const ok = await loadSchedule(place.lat, place.lng)
+      if (ok) {
+        localStorage.setItem('address', address)
+        localStorage.removeItem('pinned')
+        setPinned(null)
+        setEditing(false)
+      }
     } catch (e) {
       setStatus(e.message)
     } finally {
@@ -63,6 +67,7 @@ export default function App() {
       const found = await loadSchedule(pos.lat, pos.lng)
       if (found) {
         setShowMap(false)
+        setEditing(false)
         setPinned({ lat: pos.lat, lng: pos.lng })
         localStorage.setItem('pinned', JSON.stringify({ lat: pos.lat, lng: pos.lng }))
         const label =
@@ -94,12 +99,14 @@ export default function App() {
   return (
     <div style={S.page}>
       <div style={S.shell}>
-        <header style={S.header}>
-          {org?.logo_url && <img src={org.logo_url} alt="" style={S.logo} />}
-          <h1 style={{ ...S.title, color: accent }}>
-            {org?.organization_name || 'Kurbly'}
-          </h1>
-          <p style={S.tagline}>{t.tagline}</p>
+        <header style={S.topbar}>
+          <span style={S.wordmark}>
+            <Logo size={26} color={accent} />
+            Kurbly
+          </span>
+          {org?.organization_name && (
+            <span style={S.provider}>{org.organization_name}</span>
+          )}
         </header>
 
         {tab === 'home' && (
@@ -111,11 +118,12 @@ export default function App() {
             busy={busy}
             accent={accent}
             showMap={showMap}
-            setShowMap={setShowMap}
             onLookup={lookup}
             onUsePin={usePin}
             pinned={pinned}
             onCancelMap={() => { setShowMap(false); setStatus(null) }}
+            editing={editing}
+            setEditing={setEditing}
           />
         )}
 

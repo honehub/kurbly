@@ -1,125 +1,136 @@
-import { useState } from 'react'
 import PinMap, { SAN_ANGELO } from './PinMap'
-import { S, ICONS, tint, parseDate, formatDate, relative } from './styles'
+import { S, ICONS, catColor, shortDate, weekday, formatDate, relative } from './styles'
 import { useLang, CATEGORY_LABELS } from './i18n'
 
 export default function ScheduleView({
   address, setAddress, collections, status, busy, accent,
-  showMap, setShowMap, onLookup, onUsePin, pinned, onCancelMap,
+  showMap, onLookup, onUsePin, pinned, onCancelMap, editing, setEditing,
 }) {
-  const [showAll, setShowAll] = useState(false)
   const { t, lang, locale } = useLang()
   const labels = CATEGORY_LABELS[lang]
-
   const name = (c) => labels[c.service_category] || c.service_name
 
   const groups = groupByDate(collections)
   const first = groups[0]
-  const rest = groups.slice(1)
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() + 21)
-  const withinThreeWeeks = rest.filter((g) => parseDate(g.date) <= cutoff)
-  const later = showAll ? rest : withinThreeWeeks
-  const hiddenCount = rest.length - withinThreeWeeks.length
+  const later = groups.slice(1)
+  const hasSchedule = groups.length > 0
+
+  if (!hasSchedule || editing) {
+    return (
+      <>
+        {status && <div style={{ ...S.notice, marginTop: 8 }}>{status}</div>}
+
+        <div style={S.section}>
+          <label style={S.label} htmlFor="addr">{t.yourAddress}</label>
+          <input
+            id="addr"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onLookup()}
+            placeholder={t.addressPlaceholder}
+            style={S.input}
+            autoComplete="street-address"
+          />
+          <button
+            onClick={onLookup}
+            disabled={busy || !address.trim()}
+            style={{
+              ...S.button,
+              background: accent,
+              opacity: busy || !address.trim() ? 0.45 : 1,
+            }}
+          >
+            {busy ? t.lookingUp : t.findSchedule}
+          </button>
+          {hasSchedule && (
+            <button onClick={() => setEditing(false)} style={S.buttonQuiet}>
+              {t.cancel}
+            </button>
+          )}
+        </div>
+
+        {showMap && (
+          <div style={S.section}>
+            <PinMap
+              center={pinned || SAN_ANGELO}
+              onConfirm={onUsePin}
+              onCancel={onCancelMap}
+              accent={accent}
+              busy={busy}
+            />
+          </div>
+        )}
+      </>
+    )
+  }
+
+  const leadColor = catColor(first.items[0].service_category).solid
 
   return (
     <>
-      <div style={S.card}>
-        <label style={S.label}>{t.yourAddress}</label>
-        <input
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onLookup()}
-          placeholder={t.addressPlaceholder}
-          style={S.input}
-        />
+      <div style={S.addressBar}>
+        <span style={S.addressText}>{address}</span>
         <button
-          onClick={onLookup}
-          disabled={busy || !address.trim()}
-          style={{
-            ...S.button,
-            background: accent,
-            opacity: busy || !address.trim() ? 0.5 : 1,
-          }}
+          onClick={() => setEditing(true)}
+          style={{ ...S.textLink, color: accent }}
         >
-          {busy ? t.lookingUp : t.findSchedule}
+          {t.change}
         </button>
       </div>
 
-      {status && <div style={S.status}>{status}</div>}
+      <div style={S.hero}>
+        <div style={{ ...S.heroRail, background: leadColor }} />
+        <h2 style={S.heroDay}>{relative(first.date, t)}</h2>
+        <div style={S.heroDate}>{formatDate(first.date, locale)}</div>
 
-      {showMap && (
-        <PinMap
-          center={pinned || SAN_ANGELO}
-          onConfirm={onUsePin}
-          onCancel={onCancelMap}
-          accent={accent}
-          busy={busy}
-        />
-      )}
-
-      {first && (
-        <div style={{ ...S.card, ...S.nextCard }}>
-          <div style={S.eyebrow}>
-            {first.items.length > 1 ? t.nextPickups : t.nextPickup}
-          </div>
-          <div style={{ ...S.nextDate, color: accent, fontSize: 18 }}>
-            {formatDate(first.date, locale)}
-          </div>
-          <div style={S.relative}>{relative(first.date, t)}</div>
-
-          {first.items.map((c) => (
-            <div key={c.service_category} style={S.nextItem}>
-              <div style={{ ...S.iconWrap, background: tint(accent) }}>
-                {(() => {
-                  const Icon = ICONS[c.icon_name] || ICONS.trash
-                  return <Icon size={26} color={accent} strokeWidth={1.8} />
-                })()}
+        <div style={S.heroServices}>
+          {first.items.map((c) => {
+            const Icon = ICONS[c.icon_name] || ICONS.trash
+            const col = catColor(c.service_category)
+            return (
+              <div
+                key={c.service_category}
+                style={{ ...S.heroServiceRow, background: col.tint }}
+              >
+                <Icon size={23} color={col.solid} strokeWidth={1.9} />
+                <div>
+                  <div style={{ ...S.heroServiceName, color: col.solid }}>
+                    {name(c)}
+                  </div>
+                  {c.schedule_changed && (
+                    <div style={S.changed}>{c.change_reason}</div>
+                  )}
+                </div>
               </div>
-              <div>
-                <div style={S.nextName}>{name(c)}</div>
-                {c.schedule_changed && (
-                  <div style={S.changedText}>⚠️ {c.change_reason}</div>
-                )}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-      )}
+      </div>
 
       {later.length > 0 && (
         <>
-          <h2 style={S.sectionTitle}>{t.comingUp}</h2>
+          <div style={S.agendaHead}>{t.comingUp}</div>
           {later.map((g) => (
-            <div key={g.date} style={S.card}>
-              <div style={S.rowDate}>{formatDate(g.date, locale)}</div>
-              <div style={S.relative}>{relative(g.date, t)}</div>
-              {g.items.map((c) => (
-                <div key={c.service_category} style={{ ...S.row, marginTop: 12 }}>
-                  <div style={{ ...S.iconWrapSm, background: tint(accent) }}>
-                    {(() => {
-                      const Icon = ICONS[c.icon_name] || ICONS.trash
-                      return <Icon size={20} color={accent} strokeWidth={1.8} />
-                    })()}
+            <div key={g.date} style={S.agendaRow}>
+              <div>
+                <div style={S.agendaDate}>{shortDate(g.date, locale)}</div>
+                <div style={S.agendaWeekday}>{weekday(g.date, locale)}</div>
+              </div>
+              <div style={S.agendaServices}>
+                {g.items.map((c) => (
+                  <div key={c.service_category} style={S.agendaService}>
+                    <span style={{ ...S.dot, background: catColor(c.service_category).solid }} />
+                    <span>
+                      {name(c)}
+                      {c.schedule_changed && (
+                        <span style={S.changed}> {c.change_reason}</span>
+                      )}
+                    </span>
                   </div>
-                  <div>
-                    <div style={S.rowName}>{name(c)}</div>
-                    {c.schedule_changed && (
-                      <div style={S.changedText}>{c.change_reason}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ))}
-          {!showAll && hiddenCount > 0 && (
-            <button
-              onClick={() => setShowAll(true)}
-              style={{ ...S.button, background: 'transparent', color: accent, border: `1px solid ${accent}` }}
-            >
-              {t.seeMore(hiddenCount)}
-            </button>
-          )}
         </>
       )}
     </>

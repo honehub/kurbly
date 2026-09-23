@@ -47,6 +47,8 @@ const STRINGS = {
     // Placeholders
     noAlerts: 'No service alerts right now.',
     reportSoon: 'Report an issue — coming next.',
+	change: 'Change',
+    cancel: 'Cancel',
   },
   es: {
     tagline: 'Sepa qué sacar a la acera.',
@@ -88,6 +90,8 @@ const STRINGS = {
     loading: 'Cargando…',
     noAlerts: 'No hay avisos de servicio en este momento.',
     reportSoon: 'Reportar un problema — próximamente.',
+    change: 'Cambiar',
+    cancel: 'Cancelar',
   },
 }
 

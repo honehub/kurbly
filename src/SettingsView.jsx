@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Trash2, Recycle, Truck } from 'lucide-react'
 import { loadPreferences, savePreferences, getDeviceToken } from './push'
-import { S, tint } from './styles'
+import { S, C } from './styles'
 import { useLang } from './i18n'
 
 const TIMES = {
@@ -63,7 +63,7 @@ export default function SettingsView({ accent }) {
     })
     if (ok) {
       setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      setTimeout(() => setSaved(false), 1800)
     }
   }
 
@@ -80,26 +80,25 @@ export default function SettingsView({ accent }) {
 
   return (
     <>
-      {!hasDevice && <div style={S.status}>{t.openOnPhone}</div>}
+      {!hasDevice && <div style={{ ...S.notice, marginTop: 8 }}>{t.openOnPhone}</div>}
 
-      <div style={S.card}>
-        <div style={rowBetween}>
-          <div>
-            <div style={S.rowName}>{t.pickupReminders}</div>
-            <div style={S.muted}>{t.reminderSubtitle}</div>
-          </div>
-          <Toggle
-            on={prefs.reminders_enabled}
-            accent={accent}
-            onChange={(v) => update({ reminders_enabled: v })}
-          />
+      <div style={S.settingRow}>
+        <div>
+          <div style={S.settingName}>{t.pickupReminders}</div>
+          <div style={S.settingHint}>{t.reminderSubtitle}</div>
         </div>
+        <Toggle
+          on={prefs.reminders_enabled}
+          accent={accent}
+          onChange={(v) => update({ reminders_enabled: v })}
+        />
       </div>
 
       {prefs.reminders_enabled && (
         <>
-          <div style={S.card}>
-            <div style={S.label}>{t.when}</div>
+          <div style={S.groupHead}>{t.when}</div>
+
+          <div style={{ padding: '4px 20px 16px' }}>
             <div style={segment}>
               {[
                 { id: 'night_before', label: t.nightBefore },
@@ -118,8 +117,8 @@ export default function SettingsView({ accent }) {
                     }
                     style={{
                       ...segItem,
-                      background: active ? accent : 'transparent',
-                      color: active ? '#fff' : '#4b5563',
+                      background: active ? C.ink : 'transparent',
+                      color: active ? C.paper : C.muted,
                     }}
                   >
                     {opt.label}
@@ -128,7 +127,7 @@ export default function SettingsView({ accent }) {
               })}
             </div>
 
-            <div style={{ ...S.label, marginTop: 16 }}>{t.time}</div>
+            <div style={{ ...S.label, marginTop: 20 }}>{t.time}</div>
             <select
               value={`${prefs.reminder_hour}:${prefs.reminder_minute}`}
               onChange={(e) => {
@@ -145,29 +144,25 @@ export default function SettingsView({ accent }) {
             </select>
           </div>
 
-          <div style={S.card}>
-            <div style={S.label}>{t.remindMeAbout}</div>
-            {CATEGORIES.map(({ id, label, Icon }) => (
-              <div key={id} style={{ ...rowBetween, marginTop: 14 }}>
-                <div style={S.row}>
-                  <div style={{ ...S.iconWrapSm, background: tint(accent) }}>
-                    <Icon size={20} color={accent} strokeWidth={1.8} />
-                  </div>
-                  <div style={S.rowName}>{label}</div>
-                </div>
-                <Toggle
-                  on={prefs.enabled_categories.includes(id)}
-                  accent={accent}
-                  onChange={() => toggleCategory(id)}
-                />
+          <div style={S.groupHead}>{t.remindMeAbout}</div>
+          {CATEGORIES.map(({ id, label, Icon }) => (
+            <div key={id} style={S.settingRow}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+                <Icon size={19} color={C.muted} strokeWidth={1.75} />
+                <div style={S.settingName}>{label}</div>
               </div>
-            ))}
-          </div>
+              <Toggle
+                on={prefs.enabled_categories.includes(id)}
+                accent={accent}
+                onChange={() => toggleCategory(id)}
+              />
+            </div>
+          ))}
         </>
       )}
 
-      <div style={S.card}>
-        <div style={S.label}>{t.language}</div>
+      <div style={S.groupHead}>{t.language}</div>
+      <div style={{ padding: '4px 20px 16px' }}>
         <div style={segment}>
           {[
             { id: 'en', label: 'English' },
@@ -180,8 +175,8 @@ export default function SettingsView({ accent }) {
                 onClick={() => update({ language: opt.id })}
                 style={{
                   ...segItem,
-                  background: active ? accent : 'transparent',
-                  color: active ? '#fff' : '#4b5563',
+                  background: active ? C.ink : 'transparent',
+                  color: active ? C.paper : C.muted,
                 }}
               >
                 {opt.label}
@@ -191,7 +186,10 @@ export default function SettingsView({ accent }) {
         </div>
       </div>
 
-      {saved && <div style={{ ...S.muted, textAlign: 'center' }}>{t.saved}</div>}
+      <div style={{ height: 20 }} />
+      {saved && (
+        <div style={{ ...S.muted, textAlign: 'center', color: C.faint }}>{t.saved}</div>
+      )}
     </>
   )
 }
@@ -200,57 +198,52 @@ function Toggle({ on, onChange, accent }) {
   return (
     <button
       onClick={() => onChange(!on)}
+      aria-pressed={on}
       style={{
-        width: 48,
-        height: 28,
-        borderRadius: 14,
+        width: 44,
+        height: 26,
+        borderRadius: 13,
         border: 'none',
-        background: on ? accent : '#d1d5db',
+        background: on ? accent : C.rule,
         position: 'relative',
         cursor: 'pointer',
         transition: 'background 0.15s',
         flexShrink: 0,
+        padding: 0,
       }}
     >
       <span
         style={{
           position: 'absolute',
           top: 3,
-          left: on ? 23 : 3,
-          width: 22,
-          height: 22,
+          left: on ? 21 : 3,
+          width: 20,
+          height: 20,
           borderRadius: '50%',
           background: '#fff',
           transition: 'left 0.15s',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
         }}
       />
     </button>
   )
 }
 
-const rowBetween = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 12,
-}
-
 const segment = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  gap: 4,
-  background: '#f3f4f6',
-  borderRadius: 10,
-  padding: 4,
+  gap: 2,
+  background: C.ruleSoft,
+  borderRadius: 7,
+  padding: 3,
 }
 
 const segItem = {
   padding: '9px 8px',
   border: 'none',
-  borderRadius: 8,
+  borderRadius: 5,
   fontSize: 14,
-  fontWeight: 600,
+  fontWeight: 500,
   cursor: 'pointer',
-  fontFamily: 'inherit',
+  fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+  transition: 'background 0.12s',
 }

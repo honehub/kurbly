@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { geocodeAddress, getNextCollections, getOrganization, reverseGeocode } from './supabase'
+import { geocodeAddress, getNextCollections, getOrganization, reverseGeocode, getSchedule } from './supabase'
 import { scheduleReminders, testReminder } from './reminders'
 import PinMap, { SAN_ANGELO } from './PinMap'
 
@@ -77,7 +77,7 @@ export default function App() {
 
   // Shared by both paths: fetch the schedule and set up reminders
   async function loadSchedule(lat, lng) {
-    const data = await getNextCollections(lat, lng)
+    const data = await getSchedule(lat, lng, 60)
     if (!data || data.length === 0) {
       setStatus('That location is outside our service area.')
       setCollections(null)

@@ -74,3 +74,14 @@ export async function reverseGeocode(lat, lng) {
     return null
   }
 }
+
+export async function getSchedule(lat, lng, daysAhead = 60) {
+  const { data, error } = await supabase.rpc('get_resident_schedule', {
+    input_organization_id: ORG_ID,
+    input_lat: lat,
+    input_lng: lng,
+    input_days_ahead: daysAhead,
+  })
+  if (error) throw error
+  return data
+}

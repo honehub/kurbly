@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { geocodeAddress, getNextCollections, getOrganization } from './supabase'
+import { geocodeAddress, getNextCollections, getOrganization, reverseGeocode } from './supabase'
 import { scheduleReminders, testReminder } from './reminders'
+import PinMap, { SAN_ANGELO } from './PinMap'
 
 const ICONS = { trash: '🗑️', recycle: '♻️', truck: '🚚' }
 
@@ -11,45 +12,89 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [org, setOrg] = useState(null)
   const [reminderStatus, setReminderStatus] = useState(null)
-
+  const [showMap, setShowMap] = useState(false)
+  const [pinned, setPinned] = useState(() => {
+    const saved = localStorage.getItem('pinned')
+    return saved ? JSON.parse(saved) : null
+  })
   const accent = org?.primary_color || '#1d4ed8'
 
   useEffect(() => {
     getOrganization().then(setOrg).catch(() => {})
-    if (address) lookup()
+    if (pinned) {
+      setBusy(true)
+      loadSchedule(pinned.lat, pinned.lng).finally(() => setBusy(false))
+    } else if (address) {
+      lookup()
+    }
   }, [])
 
   async function lookup() {
     setBusy(true)
     setStatus(null)
     setCollections(null)
+    setShowMap(false)
     try {
       const place = await geocodeAddress(address)
       if (!place) {
-        setStatus("We couldn't find that address. Check the spelling and ZIP code.")
+        setStatus("We couldn't find that address. You can place a pin on the map instead.")
+        setShowMap(true)
         return
       }
-      const data = await getNextCollections(place.lat, place.lng)
-      if (!data || data.length === 0) {
-        setStatus('That address is outside our service area.')
-        return
-      }
-      setCollections(data)
+      await loadSchedule(place.lat, place.lng)
       localStorage.setItem('address', address)
+      localStorage.removeItem('pinned')
+      setPinned(null)
+    } catch (e) {
+      setStatus(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
-      const result = await scheduleReminders(place.lat, place.lng)
-      if (result === 'denied') {
-        setReminderStatus('Reminders are off. Turn on notifications for Kurbly in your phone settings.')
-      } else if (result === 'unsupported') {
-        setReminderStatus('Reminders work in the Kurbly phone app.')
-      } else {
-        setReminderStatus(`Reminders set for ${result} upcoming pickup days at 7 PM the night before.`)
+  async function usePin(pos) {
+    setBusy(true)
+    setStatus(null)
+    try {
+      const found = await loadSchedule(pos.lat, pos.lng)
+      if (found) {
+        setShowMap(false)
+        setPinned({ lat: pos.lat, lng: pos.lng })
+        localStorage.setItem('pinned', JSON.stringify({ lat: pos.lat, lng: pos.lng }))
+
+        const label =
+          (await reverseGeocode(pos.lat, pos.lng)) ||
+          `Pinned location (${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)})`
+        setAddress(label)
+        localStorage.setItem('address', label)
       }
     } catch (e) {
       setStatus(e.message)
     } finally {
       setBusy(false)
     }
+  }
+
+  // Shared by both paths: fetch the schedule and set up reminders
+  async function loadSchedule(lat, lng) {
+    const data = await getNextCollections(lat, lng)
+    if (!data || data.length === 0) {
+      setStatus('That location is outside our service area.')
+      setCollections(null)
+      return false
+    }
+    setCollections(data)
+    setStatus(null)
+
+    const result = await scheduleReminders(lat, lng)
+    if (result === 'denied') {
+      setReminderStatus('Reminders are off. Turn on notifications for Kurbly in your phone settings.')
+    } else if (result === 'unsupported') {
+      setReminderStatus('Reminders work in the Kurbly phone app.')
+    } else {
+      setReminderStatus(`Reminders set for ${result} upcoming pickup days at 7 PM the night before.`)
+    }
+    return true
   }
 
   async function runTest() {
@@ -98,6 +143,16 @@ export default function App() {
 
         {status && <div style={S.status}>{status}</div>}
 
+        {showMap && (
+          <PinMap
+            center={pinned || SAN_ANGELO}
+            onConfirm={usePin}
+            onCancel={() => { setShowMap(false); setStatus(null) }}
+            accent={accent}
+            busy={busy}
+          />
+        )}
+		
         {first && (
           <div style={{ ...S.card, ...S.nextCard }}>
             <div style={S.eyebrow}>

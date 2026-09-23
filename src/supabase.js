@@ -49,3 +49,28 @@ export async function getOrganization() {
   if (error) throw error
   return data?.[0] ?? null
 }
+
+export async function reverseGeocode(lat, lng) {
+  const url = new URL('https://nominatim.openstreetmap.org/reverse')
+  url.searchParams.set('lat', lat)
+  url.searchParams.set('lon', lng)
+  url.searchParams.set('format', 'json')
+  url.searchParams.set('zoom', '18')
+  url.searchParams.set('addressdetails', '1')
+
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Kurbly/1.0 (jim@honeaenterprises.com)' },
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    const a = json.address
+    if (!a) return null
+
+    const street = [a.house_number, a.road].filter(Boolean).join(' ')
+    const city = a.city || a.town || a.village || a.hamlet
+    return [street, city, a.postcode].filter(Boolean).join(', ') || json.display_name || null
+  } catch {
+    return null
+  }
+}

@@ -36,9 +36,7 @@ export default function App() {
     setStatus(null)
     setCollections(null)
     setShowMap(false)
-    try {
-	const pushResult = await registerForPush(lat, lng)
-	console.log('Push registration:', pushResult)		
+    try {		
       const place = await geocodeAddress(address)
       if (!place) {
         setStatus("We couldn't find that address. You can place a pin on the map instead.")

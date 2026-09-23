@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { geocodeAddress, getNextCollections, getOrganization, reverseGeocode, getSchedule } from './supabase'
 import { scheduleReminders, testReminder } from './reminders'
 import PinMap, { SAN_ANGELO } from './PinMap'
+import { registerForPush } from './push'
 
 const ICONS = { trash: '🗑️', recycle: '♻️', truck: '🚚' }
 
@@ -36,6 +37,8 @@ export default function App() {
     setCollections(null)
     setShowMap(false)
     try {
+	const pushResult = await registerForPush(lat, lng)
+	console.log('Push registration:', pushResult)		
       const place = await geocodeAddress(address)
       if (!place) {
         setStatus("We couldn't find that address. You can place a pin on the map instead.")
@@ -86,6 +89,9 @@ export default function App() {
     }
     setCollections(data)
     setStatus(null)
+
+    const pushResult = await registerForPush(lat, lng)
+    console.log('Push registration:', pushResult)
 
     const result = await scheduleReminders(lat, lng)
     if (result === 'denied') {

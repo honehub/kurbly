@@ -85,3 +85,13 @@ export async function getSchedule(lat, lng, daysAhead = 60) {
   if (error) throw error
   return data
 }
+
+export async function getAnnouncements(lat, lng) {
+  const { data, error } = await supabase.rpc('get_announcements', {
+    input_organization_id: ORG_ID,
+    input_lat: lat,
+    input_lng: lng,
+  })
+  if (error) throw error
+  return data || []
+}

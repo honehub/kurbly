@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { geocodeAddress, getOrganization, reverseGeocode, getSchedule } from './supabase'
+import { geocodeAddress, getOrganization, reverseGeocode, getSchedule, getAnnouncements } from './supabase'
 import { registerForPush } from './push'
 import BottomNav from './BottomNav'
 import ScheduleView from './ScheduleView'
@@ -7,6 +7,7 @@ import SettingsView from './SettingsView'
 import Logo from './Logo'
 import { S } from './styles'
 import { useLang } from './i18n'
+import AlertsView from './AlertsView'
 
 export default function App() {
   const { t } = useLang()
@@ -18,11 +19,20 @@ export default function App() {
   const [org, setOrg] = useState(null)
   const [showMap, setShowMap] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [alerts, setAlerts] = useState([])
+  const [alertsLoading, setAlertsLoading] = useState(false)
+  const [seenAlerts, setSeenAlerts] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('seenAlerts') || '[]'))
+    } catch {
+      return new Set()
+    }
+  })
   const [pinned, setPinned] = useState(() => {
     const saved = localStorage.getItem('pinned')
     return saved ? JSON.parse(saved) : null
   })
-
+  const [unreadIds, setUnreadIds] = useState(new Set())
   const accent = org?.primary_color || '#1d4ed8'
 
   useEffect(() => {
@@ -34,6 +44,19 @@ export default function App() {
       lookup()
     }
   }, [])
+
+  useEffect(() => {
+    if (tab !== 'alerts' || alerts.length === 0) return
+    const fresh = alerts.filter((a) => !seenAlerts.has(a.id)).map((a) => a.id)
+    if (fresh.length) setUnreadIds(new Set(fresh))
+    const ids = new Set([...seenAlerts, ...alerts.map((a) => a.id)])
+    setSeenAlerts(ids)
+    localStorage.setItem('seenAlerts', JSON.stringify([...ids]))
+  }, [tab, alerts])
+
+  useEffect(() => {
+    if (tab !== 'alerts' && unreadIds.size) setUnreadIds(new Set())
+  }, [tab])
 
   async function lookup() {
     setBusy(true)
@@ -93,8 +116,15 @@ export default function App() {
     setCollections(data)
     setStatus(null)
     registerForPush(lat, lng).catch(() => {})
+    setAlertsLoading(true)
+    getAnnouncements(lat, lng)
+      .then(setAlerts)
+      .catch(() => {})
+      .finally(() => setAlertsLoading(false))
     return true
   }
+
+  const unread = alerts.filter((a) => !seenAlerts.has(a.id)).length
 
   return (
     <div style={S.page}>
@@ -127,12 +157,14 @@ export default function App() {
           />
         )}
 
-        {tab === 'alerts' && <div style={S.empty}>{t.noAlerts}</div>}
+        {tab === 'alerts' && (
+          <AlertsView alerts={alerts} loading={alertsLoading} unreadIds={unreadIds} />
+        )}
         {tab === 'report' && <div style={S.empty}>{t.reportSoon}</div>}
         {tab === 'settings' && <SettingsView accent={accent} />}
       </div>
 
-      <BottomNav tab={tab} setTab={setTab} accent={accent} />
+      <BottomNav tab={tab} setTab={setTab} accent={accent} alertCount={unread} />
     </div>
   )
 }

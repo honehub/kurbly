@@ -49,6 +49,12 @@ const STRINGS = {
     reportSoon: 'Report an issue — coming next.',
 	change: 'Change',
     cancel: 'Cancel',
+    alertsTitle: 'Service alerts',
+    noAlertsYet: 'No alerts right now. Holiday changes, weather closures and service notices will appear here.',
+    catHoliday: 'Holiday',
+    catWeather: 'Weather',
+    catMaintenance: 'Maintenance',
+    catNotice: 'Notice',
   },
   es: {
     tagline: 'Sepa qué sacar a la acera.',
@@ -92,6 +98,12 @@ const STRINGS = {
     reportSoon: 'Reportar un problema — próximamente.',
     change: 'Cambiar',
     cancel: 'Cancelar',
+    alertsTitle: 'Avisos de servicio',
+    noAlertsYet: 'No hay avisos por ahora. Los cambios por días festivos, cierres por clima y avisos de servicio aparecerán aquí.',
+    catHoliday: 'Día festivo',
+    catWeather: 'Clima',
+    catMaintenance: 'Mantenimiento',
+    catNotice: 'Aviso',
   },
 }
 
